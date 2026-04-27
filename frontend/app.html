@@ -1,0 +1,294 @@
+<div class="app-shell">
+  <div class="background-scene" aria-hidden="true">
+    <div class="bg-gradient"></div>
+    <div class="bg-fog fog-one"></div>
+    <div class="bg-fog fog-two"></div>
+    <div class="bg-grid"></div>
+    <svg class="bg-lines" viewBox="0 0 1200 900" preserveAspectRatio="none">
+      <path d="M0 300 Q180 170 360 280 T760 340 T1200 240"></path>
+      <path d="M-20 560 Q220 420 410 560 T810 620 T1220 460"></path>
+      <path d="M90 820 Q330 610 560 720 T1130 690"></path>
+    </svg>
+    <canvas id="background-particles" class="particle-canvas"></canvas>
+    <canvas id="background-motion" class="motion-canvas"></canvas>
+  </div>
+
+  <div class="app-overlay">
+    <header class="hero-strip">
+      <div class="hero-copy">
+        <div class="topline">
+          <span class="eyebrow">Biomechanics Motion Lab</span>
+          <button id="settings-toggle" class="ghost-button" type="button">Theme Studio</button>
+        </div>
+        <h1>Clinical motion analysis with live monitoring and research-grade comparison.</h1>
+        <p>
+          Upload recordings, stream webcam posture, or batch whole datasets from CSV while the interface keeps thresholds,
+          plots, exports, and validation inside one biomechanics workspace.
+        </p>
+      </div>
+      <div class="hero-feed">
+        <div class="hero-kpi">
+          <span>Upload analysis</span>
+          <strong>Annotated exports and summaries</strong>
+        </div>
+        <div class="hero-kpi">
+          <span>Live monitoring</span>
+          <strong>Route-aware real-time posture feedback</strong>
+        </div>
+        <div class="hero-kpi">
+          <span>Research compare</span>
+          <strong>CSV-driven cohort analysis</strong>
+        </div>
+      </div>
+    </header>
+
+    <aside id="settings-panel" class="settings-panel" hidden>
+      <div class="settings-head">
+        <div>
+          <span class="eyebrow">Appearance</span>
+          <h3>Theme and color</h3>
+        </div>
+        <button id="settings-close" class="ghost-button" type="button">Close</button>
+      </div>
+      <div class="settings-group">
+        <span class="settings-label">Theme</span>
+        <div class="chip-row">
+          <button class="theme-chip" type="button" data-theme="midnight">Midnight Lab</button>
+          <button class="theme-chip" type="button" data-theme="aurora">Aurora Pulse</button>
+          <button class="theme-chip" type="button" data-theme="xray">X-Ray Studio</button>
+          <button class="theme-chip" type="button" data-theme="ember">Ember Track</button>
+          <button class="theme-chip" type="button" data-theme="ivory">Ivory Motion</button>
+        </div>
+      </div>
+      <div class="settings-group">
+        <span class="settings-label">Accent</span>
+        <div class="chip-row">
+          <button class="accent-chip" type="button" data-accent="cyan">Cyan</button>
+          <button class="accent-chip" type="button" data-accent="coral">Coral</button>
+          <button class="accent-chip" type="button" data-accent="lime">Lime</button>
+          <button class="accent-chip" type="button" data-accent="violet">Violet</button>
+        </div>
+      </div>
+      <p class="settings-note">Each theme changes the full motion backdrop, surface glow, and vector atmosphere instead of only swapping one accent color.</p>
+    </aside>
+
+    <nav class="tab-row">
+      <button class="tab-button active" data-tab="upload"><span class="tab-mark">VA</span><span>Video Analysis</span></button>
+      <button class="tab-button" data-tab="live"><span class="tab-mark">LM</span><span>Live Mode</span></button>
+      <button class="tab-button" data-tab="research"><span class="tab-mark">RM</span><span>Researcher Mode</span></button>
+    </nav>
+
+    <main class="main-stage">
+      <section id="upload-panel" class="tab-panel section-shell">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Upload Workflow</span>
+            <h2>Multi-model video analysis</h2>
+            <p>Run shoulder alignment, sagittal spinal analysis, and automatic pose routing in one pass with the model choice handled automatically in the background.</p>
+          </div>
+          <div class="section-actions">
+            <button id="upload-submit" class="primary-button" type="button"><span class="button-mark">UP</span><span class="button-label">Analyze video</span></button>
+          </div>
+        </div>
+
+        <div class="workspace-grid">
+          <div class="control-card">
+            <div class="control-card-head"><div class="icon-badge">IN</div><h3>Input and validation</h3></div>
+            <label class="field">
+              <span>Video file</span>
+              <input id="upload-file" type="file" accept="video/*" />
+              <small class="field-error" data-error-prefix="upload" data-error-key="file"></small>
+              <small class="field-error" data-error-prefix="upload" data-error-key="video"></small>
+            </label>
+            <div class="field-grid">
+              <label class="field"><span>Shoulder camera view</span><select id="upload-shoulder-view"><option value="front">Front</option><option value="back">Back</option></select><small class="field-error" data-error-prefix="upload" data-error-key="shoulderView"></small></label>
+              <label class="field"><span>Preferred pose plane</span><select id="upload-pose-plane"><option value="frontal">Frontal</option><option value="sagittal">Sagittal</option><option value="oblique">Oblique</option></select><small class="field-error" data-error-prefix="upload" data-error-key="posePlane"></small></label>
+              <label class="field"><span>Frame skipping</span><input id="upload-skip-frames" type="number" min="1" max="30" value="2" /><small class="field-error" data-error-prefix="upload" data-error-key="skipFrames"></small></label>
+            </div>
+            <div class="info-strip">
+              <strong>Model selection has been simplified.</strong>
+              <p>The interface now keeps the analysis model on a stable automatic default instead of asking you to choose it manually.</p>
+            </div>
+            <div id="upload-server-error" class="server-error"></div>
+          </div>
+
+          <div class="control-card">
+            <div class="control-card-head"><div class="icon-badge">AI</div><h3>Current behavior</h3></div>
+            <div class="checklist">
+              <div><span class="status-pill info">Auto routing</span><p>Detected pose direction can override the requested plane when confidence is high enough.</p></div>
+              <div><span class="status-pill info">Oblique fallback</span><p>If oblique is detected, the interface keeps the warning visible and uses the sagittal spinal workflow instead of leaving the analysis inactive.</p></div>
+              <div><span class="status-pill info">Exports stay ready</span><p>Annotated media, plots, CSV metrics, and clinical summaries remain available in the result area.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="upload-result" class="result-stack" hidden>
+          <div id="upload-routing" class="route-band compact-route"></div>
+          <div id="upload-metrics" class="metric-grid"></div>
+          <div id="upload-warnings" class="warning-list"></div>
+          <div id="upload-media" class="dual-grid"></div>
+          <div class="summary-grid">
+            <div class="summary-block"><h3>Shoulder Summary</h3><pre id="upload-shoulder-summary"></pre></div>
+            <div class="summary-block"><h3>Spinal Clinical Report</h3><pre id="upload-spinal-summary"></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="live-panel" class="tab-panel section-shell" hidden>
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Real-Time Dashboard</span>
+            <h2>Live motion stage</h2>
+            <p>Capture webcam posture, inspect the annotated overlay, and follow route-aware biomechanics metrics inside a cleaner live analysis stage.</p>
+          </div>
+          <div class="section-actions">
+            <button id="live-start" class="primary-button" type="button"><span class="button-mark">GO</span><span>Start live mode</span></button>
+            <button id="live-stop" class="danger-button" type="button" hidden><span class="button-mark">ST</span><span>Stop monitoring</span></button>
+          </div>
+        </div>
+
+        <div class="route-band">
+          <div class="route-copy">
+            <span class="eyebrow">Live Routing</span>
+            <h3 id="live-route-active">Waiting for live routing</h3>
+            <p id="live-route-guidance">The app will keep the detected plane visible while deciding which analysis workflow should stay active.</p>
+            <div class="route-pill-row">
+              <span class="route-pill">Selected: <strong id="live-route-selected">frontal</strong></span>
+              <span class="route-pill">Detected: <strong id="live-route-detected">pending</strong></span>
+              <span class="route-pill">Models: <strong id="live-route-models">shoulder</strong></span>
+            </div>
+          </div>
+          <div id="live-insight-cards" class="insight-grid"></div>
+        </div>
+
+        <div class="live-board">
+          <div class="live-stage-card">
+            <div class="live-stage-head">
+              <div>
+                <span class="eyebrow">Motion Stage</span>
+                <h3>Camera, annotated analysis, and vector motion view</h3>
+              </div>
+              <div class="signal-grid">
+                <div class="signal-card"><span>Transport</span><strong id="live-transport">WebSocket</strong></div>
+                <div class="signal-card"><span>Latency</span><strong id="live-latency">--</strong></div>
+                <div class="signal-card"><span>Rate</span><strong id="live-rate">--</strong></div>
+              </div>
+            </div>
+            <div class="stage-grid">
+              <div class="camera-shell" id="live-camera-shell">
+                <span class="camera-label">Camera Feed</span>
+                <video id="live-video" muted playsinline class="camera-preview"></video>
+                <div class="surface-placeholder">Camera feed will appear here when live mode starts.</div>
+              </div>
+              <div class="camera-shell" id="live-overlay-shell">
+                <span class="camera-label">Annotated Analysis Overlay</span>
+                <img id="live-annotated" alt="Annotated live frame" class="camera-preview" />
+                <div class="surface-placeholder">The analysis overlay appears here as soon as the first frame is processed.</div>
+              </div>
+              <div class="wireframe-shell">
+                <span class="camera-label">Vector Skeleton</span>
+                <canvas id="live-wireframe" class="wireframe-canvas"></canvas>
+              </div>
+            </div>
+            <canvas id="live-capture-canvas" class="hidden-canvas"></canvas>
+            <div id="live-status-grid" class="status-grid"></div>
+          </div>
+
+          <div class="control-card">
+            <div class="control-card-head"><div class="icon-badge">CF</div><h3>Live configuration</h3></div>
+            <div class="field-grid single-live-grid">
+              <label class="field"><span>Shoulder camera view</span><select id="live-shoulder-view" data-config-prefix="live"><option value="front">Front</option><option value="back">Back</option></select><small class="field-error" data-error-prefix="live" data-error-key="shoulderView"></small></label>
+              <label class="field"><span>Preferred pose plane</span><select id="live-pose-plane" data-config-prefix="live"><option value="frontal">Frontal</option><option value="sagittal">Sagittal</option><option value="oblique">Oblique</option></select><small class="field-error" data-error-prefix="live" data-error-key="posePlane"></small></label>
+              <label class="field"><span>Capture cadence</span><input id="live-skip-frames" type="number" min="1" max="30" value="2" data-config-prefix="live" /><small class="field-error" data-error-prefix="live" data-error-key="skipFrames"></small></label>
+            </div>
+            <div class="info-strip">
+              <strong>Live routing stays visible and clinically aware.</strong>
+              <p>Frames stream over a persistent socket connection, oblique posture remains flagged, and the sagittal fallback stays active instead of leaving the dashboard empty.</p>
+            </div>
+            <div id="live-server-error" class="server-error"></div>
+          </div>
+        </div>
+
+        <div class="chart-panel">
+          <div class="metric-toggle-row">
+            <button class="metric-toggle live-metric-toggle active" type="button" data-metric="shoulder_tilt_deg">Shoulder Tilt</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="trunk_lean_angle">Trunk Lean</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="kyphosis_angle">Kyphosis</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="lordosis_angle">Lordosis</button>
+          </div>
+          <div class="chart-headline">
+            <strong id="live-chart-label">Shoulder Tilt Trend</strong>
+            <span id="live-chart-meta">Last 40 readings</span>
+          </div>
+          <div class="chart-frame"><canvas id="live-chart" class="chart-canvas"></canvas></div>
+        </div>
+      </section>
+
+      <section id="research-panel" class="tab-panel section-shell" hidden>
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Researcher Mode</span>
+            <h2>Batch comparison from CSV datasets</h2>
+            <p>Upload a dataset sheet, process every video path in sequence, then compare people and states across the full experiment without exposing model selection in the UI.</p>
+          </div>
+          <div class="section-actions">
+            <button id="research-submit" class="primary-button" type="button"><span class="button-mark">CSV</span><span>Run batch analysis</span></button>
+          </div>
+        </div>
+        <div class="workspace-grid">
+          <div class="control-card">
+            <div class="control-card-head"><div class="icon-badge">DS</div><h3>Dataset input</h3></div>
+            <label class="field">
+              <span>CSV file</span>
+              <input id="research-file" type="file" accept=".csv,text/csv" />
+              <small class="field-error" data-error-prefix="research" data-error-key="file"></small>
+              <small class="field-error" data-error-prefix="research" data-error-key="csv"></small>
+            </label>
+            <div class="info-strip">
+              <a class="asset-link" href="/research-template.csv" target="_blank" rel="noreferrer">Download CSV template</a>
+              <p>Video paths in the CSV must point to files the server can actually reach on this machine.</p>
+            </div>
+            <div class="field-grid">
+              <label class="field"><span>Shoulder camera view</span><select id="research-shoulder-view"><option value="front">Front</option><option value="back">Back</option></select><small class="field-error" data-error-prefix="research" data-error-key="shoulderView"></small></label>
+              <label class="field"><span>Preferred pose plane</span><select id="research-pose-plane"><option value="frontal">Frontal</option><option value="sagittal">Sagittal</option><option value="oblique">Oblique</option></select><small class="field-error" data-error-prefix="research" data-error-key="posePlane"></small></label>
+              <label class="field"><span>Frame skipping</span><input id="research-skip-frames" type="number" min="1" max="30" value="2" /><small class="field-error" data-error-prefix="research" data-error-key="skipFrames"></small></label>
+            </div>
+            <div class="info-strip">
+              <strong>Model size is handled automatically here too.</strong>
+              <p>The research workflow uses the built-in analysis defaults while keeping routing and clinical thresholds consistent with the rest of the app.</p>
+            </div>
+            <div id="research-server-error" class="server-error"></div>
+          </div>
+          <div class="control-card">
+            <div class="control-card-head"><div class="icon-badge">BT</div><h3>Batch status</h3></div>
+            <div class="progress-wrap">
+              <div class="progress-topline"><strong id="research-status">idle</strong><span id="research-progress">0%</span></div>
+              <div class="progress-bar"><div id="research-progress-bar" style="width: 0%"></div></div>
+              <p id="research-message">Waiting for a CSV upload.</p>
+            </div>
+            <a id="research-export-link" class="asset-link" href="#" hidden target="_blank" rel="noreferrer">Download combined researcher CSV</a>
+            <div id="research-skipped" class="warning-list compact"></div>
+          </div>
+        </div>
+
+        <div id="research-results" class="result-stack" hidden>
+          <input id="research-metric" type="hidden" value="shoulder_tilt_mean" />
+          <div class="metric-toggle-row">
+            <button class="metric-toggle research-metric-toggle active" type="button" data-metric="shoulder_tilt_mean">Shoulder Tilt</button>
+            <button class="metric-toggle research-metric-toggle" type="button" data-metric="kyphosis_mean">Kyphosis</button>
+            <button class="metric-toggle research-metric-toggle" type="button" data-metric="lordosis_mean">Lordosis</button>
+            <button class="metric-toggle research-metric-toggle" type="button" data-metric="trunk_lean_mean">Trunk Lean</button>
+          </div>
+          <div class="dual-grid">
+            <div class="chart-frame tall"><canvas id="research-bar-chart" class="chart-canvas"></canvas></div>
+            <div class="chart-frame tall"><canvas id="research-area-chart" class="chart-canvas"></canvas></div>
+          </div>
+          <div class="dual-grid">
+            <div class="table-shell"><h3>Per-video results</h3><div id="research-results-table" class="table-scroll"></div></div>
+            <div class="table-shell"><h3>State summary</h3><div id="research-state-table" class="table-scroll"></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>

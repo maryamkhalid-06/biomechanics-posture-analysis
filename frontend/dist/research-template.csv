@@ -1,0 +1,4 @@
+person_id,video_path,state,label,notes
+001,/videos/p1_before.mp4,before,normal,baseline
+001,/videos/p1_after.mp4,after,improved,post-treatment
+002,/videos/p2_before.mp4,before,normal,

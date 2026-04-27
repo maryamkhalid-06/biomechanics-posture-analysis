@@ -1,0 +1,614 @@
+# Biomechanics Website Design — Technical Build Guide (React + Tailwind)
+
+This guide explains how to build a futuristic biomechanics website like the image you generated using:
+
+* React.js
+* Tailwind CSS
+* Framer Motion
+* Three.js / React Three Fiber
+* GLSL shaders (optional advanced background)
+* SVG overlays
+* Canvas particles
+* Glassmorphism UI
+* Dynamic animated backgrounds
+
+---
+
+# 1. Design Goal
+
+You are creating a **high-tech biomechanics interface**.
+
+The feeling should be:
+
+* Scientific
+* Motion-focused
+* Human anatomy + AI
+* Dynamic energy flow
+* Futuristic medical lab
+* Dark cyber style
+* Interactive movement visualization
+
+---
+
+# 2. Recommended Tech Stack
+
+## Core Stack
+
+```bash
+React + Vite
+Tailwind CSS
+Framer Motion
+React Three Fiber
+Three.js
+GSAP
+Lenis Smooth Scroll
+```
+
+Install everything:
+
+```bash
+npm create vite@latest biomechanics-site
+cd biomechanics-site
+npm install
+```
+
+Install libraries:
+
+```bash
+npm install tailwindcss framer-motion three @react-three/fiber @react-three/drei gsap lenis
+```
+
+---
+
+# 3. Folder Structure
+
+```bash
+src/
+ ├── components/
+ │    ├── HeroSection.jsx
+ │    ├── ParticleBackground.jsx
+ │    ├── MotionGrid.jsx
+ │    ├── GlowLines.jsx
+ │    ├── HumanModel.jsx
+ │
+ ├── pages/
+ │    ├── Home.jsx
+ │
+ ├── styles/
+ │    ├── background.css
+ │
+ ├── App.jsx
+```
+
+---
+
+# 4. Design Layers
+
+Your website background should NOT be one layer.
+
+Professional futuristic backgrounds use:
+
+### Layer 1 — Dark Gradient Base
+
+### Layer 2 — Animated Particles
+
+### Layer 3 — Moving Lines
+
+### Layer 4 — Glow Fog
+
+### Layer 5 — Motion Curves
+
+### Layer 6 — 3D Human Wireframe
+
+### Layer 7 — Floating Data Cards
+
+---
+
+# 5. Tailwind Background Setup
+
+Add to `tailwind.config.js`
+
+```js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        biomech: {
+          black: '#050816',
+          blue: '#00C8FF',
+          purple: '#7C3AED',
+          glow: '#38BDF8'
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+# 6. Main Hero Section Layout
+
+## Structure
+
+```jsx
+<section className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
+
+  <BackgroundEffects />
+
+  <div className="relative z-10 container mx-auto px-8 pt-32">
+      Content
+  </div>
+
+</section>
+```
+
+---
+
+# 7. Dynamic Background System
+
+You will combine:
+
+## Option A — Particle Field
+
+## Option B — Animated SVG Paths
+
+## Option C — Three.js Neural Field
+
+## Option D — Gradient Mesh
+
+---
+
+# 8. Particle Background
+
+Create:
+
+```bash
+components/ParticleBackground.jsx
+```
+
+```jsx
+import { useEffect, useRef } from 'react'
+
+export default function ParticleBackground() {
+  const canvasRef = useRef()
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const particles = []
+
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speedX: Math.random() * 0.5,
+        speedY: Math.random() * 0.5
+      })
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      particles.forEach((particle) => {
+        particle.x += particle.speedX
+        particle.y += particle.speedY
+
+        if (particle.x > canvas.width) particle.x = 0
+        if (particle.y > canvas.height) particle.y = 0
+
+        ctx.beginPath()
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
+        ctx.fillStyle = '#00C8FF'
+        ctx.fill()
+      })
+
+      requestAnimationFrame(animate)
+    }
+
+    animate()
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 opacity-30"
+    />
+  )
+}
+```
+
+---
+
+# 9. Biomechanics Motion Lines
+
+Create:
+
+```bash
+GlowLines.jsx
+```
+
+```jsx
+export default function GlowLines() {
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute w-[700px] h-[700px] rounded-full border border-cyan-500 opacity-20 blur-2xl left-[30%] top-[20%] animate-pulse" />
+
+      <svg className="absolute inset-0 w-full h-full opacity-20">
+        <path
+          d="M0 300 Q400 100 900 500"
+          stroke="#00C8FF"
+          strokeWidth="2"
+          fill="none"
+        />
+      </svg>
+    </div>
+  )
+}
+```
+
+---
+
+# 10. Moving Neural Grid
+
+Biomechanics websites feel futuristic when you add motion grids.
+
+```jsx
+<div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,200,255,0.1),transparent_60%)]" />
+```
+
+---
+
+# 11. Glassmorphism Cards
+
+Your data cards should float.
+
+```jsx
+<div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl">
+```
+
+---
+
+# 12. Floating Metrics UI
+
+```jsx
+<div className="absolute right-20 top-40 w-[280px]">
+
+  <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-cyan-500/20 p-6">
+      <h3>Motion Feed</h3>
+      <p>Velocity 7.2m/s</p>
+      <p>Joint Angle 124°</p>
+  </div>
+
+</div>
+```
+
+---
+
+# 13. Framer Motion Animation
+
+Install:
+
+```bash
+npm install framer-motion
+```
+
+Example:
+
+```jsx
+import { motion } from 'framer-motion'
+
+<motion.div
+  initial={{ opacity: 0, y: 40 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 1 }}
+>
+  Hero Content
+</motion.div>
+```
+
+---
+
+# 14. Biomechanics Glow Effect
+
+```jsx
+<div className="absolute w-[500px] h-[500px] bg-cyan-500 blur-[200px] opacity-10 rounded-full" />
+```
+
+---
+
+# 15. Animated Gradient Background
+
+Add to CSS:
+
+```css
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-bg {
+  background: linear-gradient(
+    -45deg,
+    #050816,
+    #071A2B,
+    #0E1A40,
+    #000814
+  );
+
+  background-size: 400% 400%;
+  animation: gradientMove 15s ease infinite;
+}
+```
+
+---
+
+# 16. Three.js Human Mesh Background
+
+Install:
+
+```bash
+npm install three @react-three/fiber @react-three/drei
+```
+
+Create:
+
+```jsx
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
+
+export default function HumanScene() {
+  return (
+    <Canvas>
+      <ambientLight intensity={0.5} />
+      <mesh>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial wireframe color="#00C8FF" />
+      </mesh>
+      <OrbitControls />
+    </Canvas>
+  )
+}
+```
+
+---
+
+# 17. Build the Background Stack
+
+Your final stack should be:
+
+```jsx
+<div className="absolute inset-0">
+
+  <GradientBackground />
+
+  <ParticleBackground />
+
+  <GlowLines />
+
+  <FogGlow />
+
+  <NeuralGrid />
+
+  <Human3DModel />
+
+</div>
+```
+
+---
+
+# 18. Perfect Biomechanics Color Palette
+
+```bash
+#050816
+#071A2B
+#00C8FF
+#6D28D9
+#9333EA
+#FFFFFF
+```
+
+---
+
+# 19. Biomechanics UI Inspiration
+
+Look for:
+
+* Motion capture dashboards
+* Medical AI interfaces
+* Futuristic lab interfaces
+* Neural networks
+* Sports science visualization
+* Human movement tracking
+
+---
+
+# 20. Advanced Background Effects
+
+## Effect 1 — Mouse Reactive Glow
+
+```jsx
+const handleMouseMove = (e) => {
+  const x = e.clientX
+  const y = e.clientY
+}
+```
+
+Use it for moving gradients.
+
+---
+
+## Effect 2 — Noise Overlay
+
+```css
+background-image: url(noise.png)
+```
+
+---
+
+## Effect 3 — Animated Wave Lines
+
+Use SVG.
+
+---
+
+## Effect 4 — Moving Grid
+
+```css
+transform: perspective(500px) rotateX(80deg)
+```
+
+---
+
+# 21. Best Animation Timing
+
+Use:
+
+```bash
+transition duration-700
+```
+
+Avoid fast animations.
+
+Biomechanics should feel smooth.
+
+---
+
+# 22. Perfect Hero Layout
+
+```bash
+LEFT SIDE:
+- Big futuristic text
+- CTA button
+- Subtitle
+
+RIGHT SIDE:
+- Human wireframe
+- Metrics panel
+- Motion lines
+```
+
+---
+
+# 23. Best Fonts
+
+Use:
+
+```bash
+Orbitron
+Space Grotesk
+Inter
+Manrope
+```
+
+---
+
+# 24. Most Important Rule
+
+Do not make the background static.
+
+Biomechanics = movement.
+
+Everything should move slowly.
+
+---
+
+# 25. Perfect Layer Order
+
+```bash
+1. Dark Base
+2. Gradient Mesh
+3. Fog Glow
+4. Particles
+5. SVG Lines
+6. Neural Grid
+7. Human Mesh
+8. Floating Cards
+9. Text Layer
+```
+
+---
+
+# 26. Final Professional Formula
+
+```bash
+Biomechanics Design =
+Dark Tech + Human Motion + Glow + Neural Grid + Floating Data + Motion Lines + Smooth Animation
+```
+
+---
+
+# 27. Recommended Learning Resources
+
+## React Animation
+
+* Framer Motion Docs
+* GSAP Docs
+* React Three Fiber Docs
+
+## Inspiration Websites
+
+* Awwwards
+* Behance
+* Dribbble
+* Lusion
+* Active Theory
+
+---
+
+# 28. Most Important Design Advice
+
+Avoid:
+
+* Flat design
+* Bright backgrounds
+* Heavy text
+* Static cards
+* Too many colors
+
+Use:
+
+* Blue glow
+* Purple lighting
+* Transparency
+* Layering
+* Motion depth
+
+---
+
+# 29. Best Background Formula
+
+```bash
+Gradient + Glow + SVG Flow + Particles + Grid + Blur + 3D Human
+```
+
+This creates the cinematic biomechanics style.
+
+---
+
+# 30. Recommended Next Step
+
+Build these in order:
+
+1. Hero section
+2. Gradient background
+3. Particle background
+4. Glow effect
+5. Floating cards
+6. Motion lines
+7. 3D human
+8. Scroll animation
+9. Mouse interaction
+10. Performance optimization

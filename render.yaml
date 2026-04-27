@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: biomechanics-backend
+    runtime: python
+    plan: starter
+    region: ohio
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: python run_backend.py
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: SERVE_FRONTEND
+        value: "0"
+      - key: STORAGE_ROOT_DIR
+        value: /opt/render/project/src/backend_storage
+      - key: CORS_ORIGINS
+        sync: false
+    disk:
+      name: backend-storage
+      mountPath: /opt/render/project/src/backend_storage
+      sizeGB: 5

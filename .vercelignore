@@ -1,0 +1,10 @@
+.git
+.venv
+.npm-cache
+backend_storage
+backend_stdout.log
+backend_stderr.log
+__pycache__
+frontend/node_modules
+frontend/.npm-cache
+frontend/dist
