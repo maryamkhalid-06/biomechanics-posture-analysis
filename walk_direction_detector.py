@@ -29,6 +29,42 @@ L_KNEE,     R_KNEE     = 25, 26
 NOSE                   = 0
 L_EAR,      R_EAR      = 7,  8
 
+LANDMARK_NAMES = [
+    "nose",
+    "left_eye_inner",
+    "left_eye",
+    "left_eye_outer",
+    "right_eye_inner",
+    "right_eye",
+    "right_eye_outer",
+    "left_ear",
+    "right_ear",
+    "mouth_left",
+    "mouth_right",
+    "left_shoulder",
+    "right_shoulder",
+    "left_elbow",
+    "right_elbow",
+    "left_wrist",
+    "right_wrist",
+    "left_pinky",
+    "right_pinky",
+    "left_index",
+    "right_index",
+    "left_thumb",
+    "right_thumb",
+    "left_hip",
+    "right_hip",
+    "left_knee",
+    "right_knee",
+    "left_ankle",
+    "right_ankle",
+    "left_heel",
+    "right_heel",
+    "left_foot_index",
+    "right_foot_index",
+]
+
 BONES = [
     (11,12),(11,13),(13,15),(12,14),(14,16),
     (11,23),(12,24),(23,24),(23,25),(24,26),
@@ -115,6 +151,27 @@ def draw_hud(frame, r: Result, fps=0.0):
     return frame
 
 
+def landmarks_payload(lms):
+    points = {}
+    for index, landmark in enumerate(lms):
+        name = LANDMARK_NAMES[index] if index < len(LANDMARK_NAMES) else f"landmark_{index}"
+        visibility = landmark.visibility if landmark.visibility is not None else 1.0
+        points[name] = {
+            "x": float(landmark.x),
+            "y": float(landmark.y),
+            "z": float(getattr(landmark, "z", 0.0)),
+            "visibility": float(visibility),
+        }
+    return {
+        "points": points,
+        "bones": [
+            [LANDMARK_NAMES[a], LANDMARK_NAMES[b]]
+            for a, b in BONES
+            if a < len(LANDMARK_NAMES) and b < len(LANDMARK_NAMES)
+        ],
+    }
+
+
 # ── Model download ────────────────────────────────────────────────────────────
 MODEL_URL = (
     "https://storage.googleapis.com/mediapipe-models/"
@@ -172,6 +229,26 @@ class Detector:
         draw_skeleton(frame, lms, W, H)
         r = classify(lms, W, H)
         return frame, r
+
+    def process_with_landmarks(self, frame, draw=False):
+        H, W = frame.shape[:2]
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+
+        if self._video:
+            self._ts += 33
+            det = self._lm.detect_for_video(img, self._ts)
+        else:
+            det = self._lm.detect(img)
+
+        if not det.pose_landmarks:
+            return frame, None, None
+
+        lms = det.pose_landmarks[0]
+        if draw:
+            draw_skeleton(frame, lms, W, H)
+        r = classify(lms, W, H)
+        return frame, r, landmarks_payload(lms)
 
     def close(self):
         self._lm.close()

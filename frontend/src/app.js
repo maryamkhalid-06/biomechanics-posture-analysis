@@ -44,12 +44,53 @@ const DEFAULT_CONFIG = {
   skipFrames: 2,
 };
 
+const LIVE_DEFAULT_CONFIG = {
+  shoulderView: "front",
+  posePlane: "frontal",
+  modelSize: "small",
+  skipFrames: 2,
+};
+
+const LIVE_CHART_WINDOW_MS = 12000;
+
+const WALK_VISIBILITY_THRESHOLD = 0.22;
+
+const WALK_BONES = [
+  ["left_shoulder", "right_shoulder"],
+  ["left_shoulder", "left_elbow"],
+  ["left_elbow", "left_wrist"],
+  ["right_shoulder", "right_elbow"],
+  ["right_elbow", "right_wrist"],
+  ["left_shoulder", "left_hip"],
+  ["right_shoulder", "right_hip"],
+  ["left_hip", "right_hip"],
+  ["left_hip", "left_knee"],
+  ["left_knee", "left_ankle"],
+  ["right_hip", "right_knee"],
+  ["right_knee", "right_ankle"],
+  ["left_ankle", "left_heel"],
+  ["left_heel", "left_foot_index"],
+  ["right_ankle", "right_heel"],
+  ["right_heel", "right_foot_index"],
+];
+
+const SPINAL_ORDER = ["C1", "C4", "C7", "T3", "T8", "L1", "L3", "L5", "Sacrum"];
+
 const METRIC_LABELS = {
   shoulder_tilt_deg: "Shoulder Tilt",
+  clavicle_tilt_deg: "Clavicle Tilt",
+  shoulder_imbalance: "Shoulder Imbalance",
+  trunk_tilt_deg: "Frontal Trunk Tilt",
+  lateral_shift_pct: "Lateral Shift",
   trunk_lean_angle: "Trunk Lean",
   kyphosis_angle: "Kyphosis",
   lordosis_angle: "Lordosis",
+  keypoint_confidence: "Keypoint Confidence",
   shoulder_tilt_mean: "Shoulder Tilt",
+  clavicle_tilt_mean: "Clavicle Tilt",
+  shoulder_imbalance_mean: "Shoulder Imbalance",
+  trunk_tilt_mean: "Frontal Trunk Tilt",
+  lateral_shift_mean: "Lateral Shift",
   kyphosis_mean: "Kyphosis",
   lordosis_mean: "Lordosis",
   trunk_lean_mean: "Trunk Lean",
@@ -79,6 +120,7 @@ const state = {
     chartMetric: "shoulder_tilt_deg",
     metrics: {},
     routing: null,
+    overlay: null,
     performance: {
       latencyMs: null,
       rateHz: null,
@@ -91,7 +133,7 @@ function cloneConfig() {
 }
 
 const uploadConfig = cloneConfig();
-const liveConfig = cloneConfig();
+const liveConfig = JSON.parse(JSON.stringify(LIVE_DEFAULT_CONFIG));
 const researchConfig = cloneConfig();
 
 function $(id) {
@@ -143,13 +185,14 @@ function setShellFrameState(id, hasFrame) {
 }
 
 function readConfig(prefix, target) {
+  const defaults = prefix === "live" ? LIVE_DEFAULT_CONFIG : DEFAULT_CONFIG;
   const shoulderView = $(`${prefix}-shoulder-view`);
   const posePlane = $(`${prefix}-pose-plane`);
   const skipFrames = $(`${prefix}-skip-frames`);
-  target.shoulderView = shoulderView ? shoulderView.value : DEFAULT_CONFIG.shoulderView;
-  target.posePlane = posePlane ? posePlane.value : DEFAULT_CONFIG.posePlane;
-  target.modelSize = DEFAULT_CONFIG.modelSize;
-  target.skipFrames = Number(skipFrames?.value ?? DEFAULT_CONFIG.skipFrames);
+  target.shoulderView = shoulderView ? shoulderView.value : defaults.shoulderView;
+  target.posePlane = posePlane ? posePlane.value : defaults.posePlane;
+  target.modelSize = defaults.modelSize;
+  target.skipFrames = Number(skipFrames?.value ?? defaults.skipFrames);
 }
 
 function clearErrors(prefix) {
@@ -287,9 +330,13 @@ function renderUploadResult(result) {
 
   renderMetricCards("upload-metrics", [
     { label: "Shoulder Tilt Mean", value: result.shoulder.summary?.shoulder_tilt_mean, unit: "deg" },
+    { label: "Clavicle Tilt Mean", value: result.shoulder.summary?.clavicle_tilt_mean, unit: "deg" },
+    { label: "Shoulder Imbalance", value: result.shoulder.summary?.shoulder_imbalance_mean, unit: "px" },
+    { label: "Frontal Trunk Tilt", value: result.shoulder.summary?.trunk_tilt_mean, unit: "deg" },
+    { label: "Lateral Shift", value: result.shoulder.summary?.lateral_shift_mean, unit: "%" },
     { label: "Trunk Lean Mean", value: result.spinal.summary?.trunk_lean?.mean, unit: "deg" },
     { label: "Kyphosis Mean", value: result.spinal.summary?.kyphosis?.mean, unit: "deg" },
-    { label: "Valid Frames", value: result.spinal.summary?.valid_frames, unit: "" },
+    { label: "Lordosis Mean", value: result.spinal.summary?.lordosis?.mean, unit: "deg" },
   ]);
 
   renderWarnings("upload-warnings", result.warnings || []);
@@ -307,6 +354,24 @@ function renderUploadResult(result) {
                 <a class="asset-link" href="${result.shoulder.assets.csv}" target="_blank" rel="noreferrer">Open metrics CSV</a>
                 <a class="asset-link" href="${result.shoulder.assets.angle_plot}" target="_blank" rel="noreferrer">Angle plot</a>
                 <a class="asset-link" href="${result.shoulder.assets.symmetry_bar_chart}" target="_blank" rel="noreferrer">Symmetry chart</a>
+              </div>
+              <div class="dual-grid">
+                ${
+                  result.shoulder.assets.angle_plot
+                    ? `<div class="media-panel">
+                        <h3>Angle Plot</h3>
+                        <img src="${result.shoulder.assets.angle_plot}" alt="Shoulder angle plot" />
+                      </div>`
+                    : ""
+                }
+                ${
+                  result.shoulder.assets.symmetry_bar_chart
+                    ? `<div class="media-panel">
+                        <h3>Symmetry Chart</h3>
+                        <img src="${result.shoulder.assets.symmetry_bar_chart}" alt="Shoulder symmetry chart" />
+                      </div>`
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -320,6 +385,24 @@ function renderUploadResult(result) {
                 ${result.spinal.assets.annotated_video ? `<a class="asset-link" href="${result.spinal.assets.annotated_video}" target="_blank" rel="noreferrer">Open annotated video</a>` : ""}
                 <a class="asset-link" href="${result.spinal.assets.time_series}" target="_blank" rel="noreferrer">Time series</a>
                 <a class="asset-link" href="${result.spinal.assets.standard_comparison}" target="_blank" rel="noreferrer">Standard comparison</a>
+              </div>
+              <div class="dual-grid">
+                ${
+                  result.spinal.assets.time_series
+                    ? `<div class="media-panel">
+                        <h3>Time Series</h3>
+                        <img src="${result.spinal.assets.time_series}" alt="Spinal time series chart" />
+                      </div>`
+                    : ""
+                }
+                ${
+                  result.spinal.assets.standard_comparison
+                    ? `<div class="media-panel">
+                        <h3>Reference Comparison</h3>
+                        <img src="${result.spinal.assets.standard_comparison}" alt="Spinal reference comparison chart" />
+                      </div>`
+                    : ""
+                }
               </div>`
             : ""
         }
@@ -371,16 +454,24 @@ function thresholdText(stateItem) {
 }
 
 function renderLiveStatus(states) {
-  const items = [
-    ["Shoulder Tilt", states?.shoulder_tilt],
-    ["Trunk Lean", states?.trunk_lean],
-    ["Kyphosis", states?.kyphosis],
-    ["Lordosis", states?.lordosis],
+  const routing = state.live.routing || optimisticRoutingFromConfig();
+  const metricItems = [
+    ...(routing.active_metrics || []).map((item) => ({ ...item, active: true })),
+    ...(routing.standby_metrics || []).map((item) => ({ ...item, active: false })),
   ];
+  const items = metricItems.length
+    ? metricItems
+    : [
+        { key: "shoulder_tilt_deg", label: "Shoulder Tilt", unit: "deg", threshold_key: "shoulder_tilt", active: true },
+        { key: "trunk_lean_angle", label: "Trunk Lean", unit: "deg", threshold_key: "trunk_lean", active: true },
+        { key: "kyphosis_angle", label: "Kyphosis", unit: "deg", threshold_key: "kyphosis", active: true },
+        { key: "lordosis_angle", label: "Lordosis", unit: "deg", threshold_key: "lordosis", active: true },
+      ];
   setHtml(
     "live-status-grid",
     items
-      .map(([label, stateItem]) => {
+      .map((item) => {
+        const stateItem = item.threshold_key ? states?.[item.threshold_key] : null;
         const tone = stateItem?.state === "alert" ? "bad" : stateItem?.state === "normal" ? "good" : "";
         const stateText =
           stateItem?.state === "alert"
@@ -389,13 +480,16 @@ function renderLiveStatus(states) {
               ? "Within threshold"
               : stateItem?.state === "inactive"
                 ? "Standby"
-                : "No reading";
+                : item.active
+                  ? "Model output"
+                  : "Standby metric";
+        const value = state.live.metrics?.[item.key];
         return `
           <div class="status-card ${tone}">
-            <span>${label}</span>
-            <strong>${stateItem?.value === null || stateItem?.value === undefined ? "--" : formatNumber(stateItem.value)}</strong>
+            <span>${item.label}</span>
+            <strong>${value === null || value === undefined ? "--" : `${formatNumber(value)}${item.unit ? ` ${item.unit}` : ""}`}</strong>
             <small>${stateText}</small>
-            <em>${thresholdText(stateItem)}</em>
+            <em>${stateItem ? thresholdText(stateItem) : item.active ? "Live model metric" : "Waiting for active route"}</em>
           </div>
         `;
       })
@@ -468,7 +562,7 @@ function setActiveMetricButton(metric, selector) {
 
 function syncLiveChartLabel() {
   $("live-chart-label").textContent = `${METRIC_LABELS[state.live.chartMetric] || "Live Metric"} Trend`;
-  $("live-chart-meta").textContent = `Last ${Math.max(state.live.points.length, 40)} readings`;
+  $("live-chart-meta").textContent = `Rolling ${Math.round(LIVE_CHART_WINDOW_MS / 1000)} second window`;
 }
 
 function ensureLiveMetricForRoute(routing) {
@@ -491,77 +585,147 @@ function setupCanvas(canvas) {
   return { context, width, height };
 }
 
+function metricDefinition(metricKey) {
+  const routing = state.live.routing || {};
+  const pool = [...(routing.active_metrics || []), ...(routing.standby_metrics || [])];
+  return pool.find((item) => item.key === metricKey) || null;
+}
+
+function metricThreshold(metricKey) {
+  const def = metricDefinition(metricKey);
+  const thresholdKey = def?.threshold_key;
+  return thresholdKey ? state.live.routing?.clinical_thresholds?.[thresholdKey] || null : null;
+}
+
+function liveChartPoints(points, metric) {
+  const latest = points.at(-1)?.t || 0;
+  const lower = latest - LIVE_CHART_WINDOW_MS;
+  return points.filter(
+    (point) => point.t >= lower && Number.isFinite(Number(point[metric])),
+  );
+}
+
 function drawLineChart(canvasId, points, metric) {
   const canvas = $(canvasId);
   const { context: ctx, width, height } = setupCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
 
+  const samples = liveChartPoints(points, metric);
+  const left = 58;
+  const right = width - 20;
+  const top = 22;
+  const bottom = height - 34;
+  const chartWidth = right - left;
+  const chartHeight = bottom - top;
+
   ctx.strokeStyle = rgbaVar("--accent-rgb", 0.12);
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i += 1) {
-    const y = 22 + ((height - 44) / 4) * i;
+    const y = top + (chartHeight / 4) * i;
     ctx.beginPath();
-    ctx.moveTo(44, y);
-    ctx.lineTo(width - 20, y);
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
     ctx.stroke();
   }
 
-  const values = points.map((point) => Number(point[metric])).filter((value) => Number.isFinite(value));
-  if (!values.length) {
+  if (!samples.length) {
     ctx.fillStyle = cssVar("--muted");
     ctx.font = "14px Space Grotesk";
     ctx.fillText("Live chart will appear here as the stream starts.", 44, height / 2);
     return;
   }
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const values = samples.map((point) => Number(point[metric]));
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  if (Math.abs(max - min) < 0.001) {
+    min -= 1;
+    max += 1;
+  }
+  const threshold = metricThreshold(metric);
+  if (threshold?.type === "upper_abs") {
+    max = Math.max(max, threshold.upper);
+    min = Math.min(min, -threshold.upper);
+  } else if (threshold?.type === "range_abs") {
+    max = Math.max(max, threshold.upper);
+    min = Math.min(min, -threshold.upper);
+  } else if (threshold?.type === "range") {
+    max = Math.max(max, threshold.upper);
+    min = Math.min(min, threshold.lower);
+  }
   const range = max - min || 1;
-  const left = 44;
-  const top = 22;
-  const chartWidth = width - 66;
-  const chartHeight = height - 44;
+  const latest = samples.at(-1)?.t || 0;
+  const lower = latest - LIVE_CHART_WINDOW_MS;
 
-  const gradient = ctx.createLinearGradient(0, top, 0, top + chartHeight);
+  const xFor = (point) => left + ((point.t - lower) / LIVE_CHART_WINDOW_MS) * chartWidth;
+  const yFor = (value) => top + chartHeight - ((value - min) / range) * chartHeight;
+
+  if (threshold?.type === "upper_abs" || threshold?.type === "range_abs") {
+    const upperY = yFor(threshold.upper);
+    const lowerY = yFor(-threshold.upper);
+    ctx.fillStyle = rgbaVar("--accent-rgb", 0.06);
+    ctx.fillRect(left, upperY, chartWidth, lowerY - upperY);
+  } else if (threshold?.type === "range") {
+    const upperY = yFor(threshold.upper);
+    const lowerY = yFor(threshold.lower);
+    ctx.fillStyle = rgbaVar("--accent-rgb", 0.06);
+    ctx.fillRect(left, upperY, chartWidth, lowerY - upperY);
+  }
+
+  const gradient = ctx.createLinearGradient(0, top, 0, bottom);
   gradient.addColorStop(0, rgbaVar("--accent-rgb", 0.38));
   gradient.addColorStop(1, rgbaVar("--accent-rgb", 0.02));
 
   ctx.beginPath();
-  values.forEach((value, index) => {
-    const x = left + (chartWidth * index) / Math.max(values.length - 1, 1);
-    const y = top + chartHeight - ((value - min) / range) * chartHeight;
+  samples.forEach((point, index) => {
+    const x = xFor(point);
+    const y = yFor(Number(point[metric]));
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
-  ctx.lineTo(left + chartWidth, top + chartHeight);
-  ctx.lineTo(left, top + chartHeight);
+  ctx.lineTo(xFor(samples.at(-1)), bottom);
+  ctx.lineTo(xFor(samples[0]), bottom);
   ctx.closePath();
   ctx.fillStyle = gradient;
   ctx.fill();
 
   ctx.strokeStyle = cssVar("--accent");
-  ctx.lineWidth = 2.8;
+  ctx.lineWidth = 2.6;
   ctx.beginPath();
-  values.forEach((value, index) => {
-    const x = left + (chartWidth * index) / Math.max(values.length - 1, 1);
-    const y = top + chartHeight - ((value - min) / range) * chartHeight;
+  samples.forEach((point, index) => {
+    const x = xFor(point);
+    const y = yFor(Number(point[metric]));
     if (index === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   });
   ctx.stroke();
 
-  const lastValue = values[values.length - 1];
-  const lastX = left + chartWidth;
-  const lastY = top + chartHeight - ((lastValue - min) / range) * chartHeight;
+  const latestValue = Number(samples.at(-1)[metric]);
+  const latestX = xFor(samples.at(-1));
+  const latestY = yFor(latestValue);
   ctx.fillStyle = cssVar("--accent");
   ctx.beginPath();
-  ctx.arc(lastX, lastY, 4.5, 0, Math.PI * 2);
+  ctx.arc(latestX, latestY, 4.5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = cssVar("--muted");
   ctx.font = "12px Space Grotesk";
   ctx.fillText(max.toFixed(1), 10, top + 8);
-  ctx.fillText(min.toFixed(1), 10, top + chartHeight);
+  ctx.fillText(min.toFixed(1), 10, bottom);
+
+  ctx.textAlign = "center";
+  ctx.fillText(`-${Math.round(LIVE_CHART_WINDOW_MS / 1000)}s`, left, height - 10);
+  ctx.fillText("-6s", left + chartWidth / 2, height - 10);
+  ctx.fillText("now", right, height - 10);
+  ctx.textAlign = "left";
+
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const def = metricDefinition(metric);
+  ctx.fillStyle = cssVar("--text");
+  ctx.font = "12px Space Grotesk";
+  ctx.fillText(`Current ${latestValue.toFixed(2)}${def?.unit ? ` ${def.unit}` : ""}`, left, 16);
+  ctx.fillText(`Mean ${mean.toFixed(2)}`, left + 156, 16);
+  ctx.fillText(`Samples ${samples.length}`, left + 262, 16);
 }
 
 function drawBarChart(canvasId, rows, metric) {
@@ -878,46 +1042,230 @@ function initBackgroundScene() {
   window.requestAnimationFrame(draw);
 }
 
-function initLiveWireframe() {
-  const canvas = $("live-wireframe");
-  if (!canvas) return;
+function pointVisibility(point) {
+  if (!point) return 0;
+  if (Number.isFinite(Number(point.visibility))) return Number(point.visibility);
+  if (Number.isFinite(Number(point.confidence))) return Number(point.confidence);
+  return 1;
+}
 
-  const draw = (time) => {
-    const { context: ctx, width, height } = setupCanvas(canvas);
-    ctx.clearRect(0, 0, width, height);
+function projectPoint(point, width, height, frame = {}, fit = "contain") {
+  if (!point) return null;
+  const sourceWidth = Math.max(1, Number(frame.width) || 640);
+  const sourceHeight = Math.max(1, Number(frame.height) || 360);
+  const scale =
+    fit === "cover"
+      ? Math.max(width / sourceWidth, height / sourceHeight)
+      : Math.min(width / sourceWidth, height / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const offsetX = (width - drawWidth) / 2;
+  const offsetY = (height - drawHeight) / 2;
+  return {
+    x: offsetX + Number(point.x) * drawWidth,
+    y: offsetY + Number(point.y) * drawHeight,
+    visibility: pointVisibility(point),
+  };
+}
 
-    const floorY = height * 0.82;
-    ctx.strokeStyle = rgbaVar("--accent-rgb", 0.18);
-    ctx.lineWidth = 1;
-    for (let index = 0; index < 7; index += 1) {
-      const y = floorY - index * 34;
-      ctx.beginPath();
-      ctx.moveTo(width * 0.08, y);
-      ctx.lineTo(width * 0.92, y);
-      ctx.stroke();
+function overlayFrame() {
+  return state.live.overlay?.frame || { width: 640, height: 360 };
+}
+
+function drawNeonJoint(ctx, point, radius = 4.2, alpha = 0.95) {
+  if (!point) return;
+  const glow = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius * 4);
+  glow.addColorStop(0, rgbaVar("--accent-rgb", alpha));
+  glow.addColorStop(1, rgbaVar("--accent-rgb", 0));
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, radius * 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = rgbaVar("--accent-alt-rgb", alpha);
+  ctx.beginPath();
+  ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSegmentSet(ctx, points, segments, width, height, fit, stroke, lineWidth = 2.8, visibilityFloor = 0) {
+  const frame = overlayFrame();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+  segments.forEach(([a, b]) => {
+    const pa = projectPoint(points[a], width, height, frame, fit);
+    const pb = projectPoint(points[b], width, height, frame, fit);
+    if (!pa || !pb || pa.visibility < visibilityFloor || pb.visibility < visibilityFloor) return;
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+  });
+}
+
+function drawWalkFigure(ctx, width, height, fit = "contain", alpha = 0.75) {
+  const walk = state.live.overlay?.walk;
+  if (!walk?.points) return false;
+  drawSegmentSet(ctx, walk.points, walk.bones || WALK_BONES, width, height, fit, rgbaVar("--accent-rgb", alpha), 2.2, WALK_VISIBILITY_THRESHOLD);
+  Object.values(walk.points).forEach((point) => {
+    const projected = projectPoint(point, width, height, overlayFrame(), fit);
+    if (!projected || projected.visibility < WALK_VISIBILITY_THRESHOLD) return;
+    drawNeonJoint(ctx, projected, projected.visibility > 0.6 ? 3.8 : 2.8, alpha * 0.9);
+  });
+  return true;
+}
+
+function drawShoulderGeometry(ctx, width, height, fit = "contain") {
+  const shoulder = state.live.overlay?.shoulder;
+  if (!shoulder?.points) return false;
+  drawSegmentSet(ctx, shoulder.points, shoulder.segments || [], width, height, fit, rgbaVar("--accent-alt-rgb", 0.92), 3, 0.2);
+  ["left_shoulder", "right_shoulder", "left_clavicle", "right_clavicle", "neck", "hip"].forEach((name) => {
+    const point = projectPoint(shoulder.points[name], width, height, overlayFrame(), fit);
+    if (!point) return;
+    drawNeonJoint(ctx, point, name.includes("clavicle") ? 3 : 4.6, 0.95);
+  });
+  return true;
+}
+
+function drawSpinalGeometry(ctx, width, height, fit = "contain") {
+  const spinal = state.live.overlay?.spinal;
+  if (!spinal?.points) return false;
+  const order = spinal.order || SPINAL_ORDER;
+  ctx.strokeStyle = rgbaVar("--accent-alt-rgb", 0.92);
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  let started = false;
+  order.forEach((name) => {
+    const point = projectPoint(spinal.points[name], width, height, overlayFrame(), fit);
+    if (!point) return;
+    if (!started) {
+      ctx.moveTo(point.x, point.y);
+      started = true;
+    } else {
+      ctx.lineTo(point.x, point.y);
     }
+  });
+  if (started) ctx.stroke();
 
-    const metrics = state.live.metrics || {};
-    const lean = Number(metrics.trunk_lean_angle) || 0;
-    const shoulder = Number(metrics.shoulder_tilt_deg) || 0;
-    const kyphosis = Number(metrics.kyphosis_angle) || 0;
-    const phase = time * 0.004 + kyphosis * 0.015;
+  order.forEach((name) => {
+    const point = projectPoint(spinal.points[name], width, height, overlayFrame(), fit);
+    if (!point) return;
+    drawNeonJoint(ctx, point, 4.4, 0.95);
+  });
+  return started;
+}
 
-    drawSkeletonFigure(ctx, width, height, {
-      centerX: width * 0.5,
-      centerY: height * 0.68,
-      scale: Math.min(width, height) * 0.18,
-      trunkLean: Math.max(-18, Math.min(18, lean)),
-      shoulderTilt: Math.max(-16, Math.min(16, shoulder * 1.8)),
-      phase,
-      alpha: 0.95,
+function drawOverlayPanel(ctx, width, height) {
+  const metrics = state.live.metrics || {};
+  const routing = state.live.routing || {};
+  const entries = [
+    ["Shoulder", metrics.shoulder_tilt_deg, "deg"],
+    ["Trunk Lean", metrics.trunk_lean_angle, "deg"],
+    ["Kyphosis", metrics.kyphosis_angle, "deg"],
+    ["Lordosis", metrics.lordosis_angle, "deg"],
+  ];
+  const active = entries.filter(([, value]) => Number.isFinite(Number(value)));
+  const panelHeight = 70 + active.length * 24;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(5, 12, 20, 0.66)";
+  ctx.strokeStyle = rgbaVar("--accent-rgb", 0.24);
+  ctx.lineWidth = 1;
+  const panelWidth = Math.min(260, width - 28);
+  ctx.fillRect(14, 14, panelWidth, panelHeight);
+  ctx.strokeRect(14, 14, panelWidth, panelHeight);
+
+  ctx.fillStyle = cssVar("--text");
+  ctx.font = "600 14px Space Grotesk";
+  ctx.fillText(`${humanizePlane(routing.effective_pose_plane || "pending")} live overlay`, 28, 38);
+  ctx.fillStyle = cssVar("--muted");
+  ctx.font = "12px Space Grotesk";
+  ctx.fillText(
+    routing.detected_pose_plane
+      ? `Detected ${humanizePlane(routing.detected_pose_plane)}`
+      : "Waiting for route confirmation",
+    28,
+    58,
+  );
+
+  active.forEach(([label, value, unit], index) => {
+    const y = 84 + index * 24;
+    ctx.fillStyle = cssVar("--muted");
+    ctx.fillText(label, 28, y);
+    ctx.fillStyle = cssVar("--accent");
+    ctx.fillText(`${formatNumber(value)} ${unit}`, 150, y);
+  });
+  ctx.restore();
+}
+
+function drawDiagnosticGrid(ctx, width, height) {
+  ctx.strokeStyle = rgbaVar("--accent-rgb", 0.12);
+  ctx.lineWidth = 1;
+  for (let index = 0; index <= 8; index += 1) {
+    const y = 18 + ((height - 36) / 8) * index;
+    ctx.beginPath();
+    ctx.moveTo(16, y);
+    ctx.lineTo(width - 16, y);
+    ctx.stroke();
+  }
+  for (let index = 0; index <= 6; index += 1) {
+    const x = 16 + ((width - 32) / 6) * index;
+    ctx.beginPath();
+    ctx.moveTo(x, 18);
+    ctx.lineTo(x, height - 18);
+    ctx.stroke();
+  }
+}
+
+function drawLiveModelCanvas(canvasId, renderer) {
+  const canvas = $(canvasId);
+  if (!canvas) return;
+  const { context: ctx, width, height } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, width, height);
+  renderer(ctx, width, height);
+}
+
+function initLiveWireframe() {
+  const draw = () => {
+    drawLiveModelCanvas("live-analysis-overlay", (ctx, width, height) => {
+      const hasWalk = drawWalkFigure(ctx, width, height, "cover", 0.52);
+      const hasShoulder = drawShoulderGeometry(ctx, width, height, "cover");
+      const hasSpinal = drawSpinalGeometry(ctx, width, height, "cover");
+      if (hasWalk || hasShoulder || hasSpinal) drawOverlayPanel(ctx, width, height);
     });
 
-    ctx.fillStyle = cssVar("--muted");
-    ctx.font = "13px Space Grotesk";
-    ctx.fillText(`Lean ${formatNumber(lean)} deg`, 20, 96);
-    ctx.fillText(`Shoulder ${formatNumber(shoulder)} deg`, 20, 118);
-    ctx.fillText(`Kyphosis ${formatNumber(kyphosis)} deg`, 20, 140);
+    drawLiveModelCanvas("live-model-view", (ctx, width, height) => {
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, "rgba(5, 14, 24, 0.98)");
+      gradient.addColorStop(1, "rgba(2, 8, 14, 0.98)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawDiagnosticGrid(ctx, width, height);
+      drawWalkFigure(ctx, width, height, "contain", 0.26);
+      drawShoulderGeometry(ctx, width, height, "contain");
+      drawSpinalGeometry(ctx, width, height, "contain");
+      drawOverlayPanel(ctx, width, height);
+    });
+
+    drawLiveModelCanvas("live-wireframe", (ctx, width, height) => {
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, "rgba(4, 10, 18, 0.98)");
+      gradient.addColorStop(1, "rgba(1, 6, 12, 0.98)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      drawDiagnosticGrid(ctx, width, height);
+      drawWalkFigure(ctx, width, height, "contain", 0.9);
+      drawSpinalGeometry(ctx, width, height, "contain");
+
+      const metrics = state.live.metrics || {};
+      ctx.fillStyle = cssVar("--muted");
+      ctx.font = "13px Space Grotesk";
+      ctx.fillText(`Shoulder ${formatNumber(metrics.shoulder_tilt_deg)} deg`, 18, height - 58);
+      ctx.fillText(`Trunk Lean ${formatNumber(metrics.trunk_lean_angle)} deg`, 18, height - 38);
+      ctx.fillText(`Kyphosis ${formatNumber(metrics.kyphosis_angle)} deg`, 18, height - 18);
+    });
 
     window.requestAnimationFrame(draw);
   };
@@ -963,7 +1311,7 @@ function pushLiveConfig() {
         payload: {
           shoulder_view: liveConfig.shoulderView,
           pose_plane: liveConfig.posePlane,
-          model_size: DEFAULT_CONFIG.modelSize,
+          model_size: liveConfig.modelSize,
           skip_frames: Number(liveConfig.skipFrames),
         },
       }),
@@ -979,8 +1327,8 @@ function handleLiveAnalysisPayload(payload) {
   state.live.inFlight = false;
   state.live.metrics = payload.metrics || {};
   state.live.routing = payload.routing || optimisticRoutingFromConfig();
-  $("live-annotated").src = payload.annotated_frame || "";
-  setShellFrameState("live-overlay-shell", Boolean(payload.annotated_frame));
+  state.live.overlay = payload.overlay || null;
+  setShellFrameState("live-overlay-shell", Boolean(payload.overlay));
   renderLiveStatus(payload.threshold_states);
   renderLiveRouting(state.live.routing);
   renderLiveInsights(state.live.routing);
@@ -988,12 +1336,18 @@ function handleLiveAnalysisPayload(payload) {
   updateLiveSignalCards();
 
   state.live.points.push({
+    t: now,
     shoulder_tilt_deg: payload.metrics?.shoulder_tilt_deg,
+    clavicle_tilt_deg: payload.metrics?.clavicle_tilt_deg,
+    shoulder_imbalance: payload.metrics?.shoulder_imbalance,
+    trunk_tilt_deg: payload.metrics?.trunk_tilt_deg,
+    lateral_shift_pct: payload.metrics?.lateral_shift_pct,
     trunk_lean_angle: payload.metrics?.trunk_lean_angle,
     kyphosis_angle: payload.metrics?.kyphosis_angle,
     lordosis_angle: payload.metrics?.lordosis_angle,
+    keypoint_confidence: payload.metrics?.keypoint_confidence,
   });
-  state.live.points = state.live.points.slice(-40);
+  state.live.points = state.live.points.filter((point) => point.t >= now - LIVE_CHART_WINDOW_MS * 1.5);
   drawLineChart("live-chart", state.live.points, state.live.chartMetric);
 }
 
@@ -1066,7 +1420,7 @@ function submitLiveFrame(video, stamp) {
 
   const captureCanvas = $("live-capture-canvas");
   const context = captureCanvas.getContext("2d");
-  const targetWidth = Math.min(640, video.videoWidth || 640);
+  const targetWidth = Math.min(560, video.videoWidth || 560);
   const targetHeight = Math.max(1, Math.round(((video.videoHeight || 360) / (video.videoWidth || 640)) * targetWidth));
   captureCanvas.width = targetWidth;
   captureCanvas.height = targetHeight;
@@ -1079,7 +1433,7 @@ function submitLiveFrame(video, stamp) {
     JSON.stringify({
       type: "frame",
       payload: {
-        image: captureCanvas.toDataURL("image/jpeg", 0.68),
+        image: captureCanvas.toDataURL("image/jpeg", 0.58),
       },
     }),
   );
@@ -1103,8 +1457,8 @@ function resetLiveSurface() {
   state.live.points = [];
   state.live.metrics = {};
   state.live.routing = null;
+  state.live.overlay = null;
   state.live.performance = { latencyMs: null, rateHz: null };
-  $("live-annotated").removeAttribute("src");
   setShellFrameState("live-camera-shell", Boolean(state.live.stream));
   setShellFrameState("live-overlay-shell", false);
   renderLiveStatus({});
@@ -1145,7 +1499,7 @@ async function startLiveMode() {
 
   try {
     state.live.stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: { width: { ideal: 960 }, height: { ideal: 540 } },
       audio: false,
     });
     const video = $("live-video");

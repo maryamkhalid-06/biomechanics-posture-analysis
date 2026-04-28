@@ -178,12 +178,13 @@
               <div class="camera-shell" id="live-camera-shell">
                 <span class="camera-label">Camera Feed</span>
                 <video id="live-video" muted playsinline class="camera-preview"></video>
+                <canvas id="live-analysis-overlay" class="camera-overlay-canvas"></canvas>
                 <div class="surface-placeholder">Camera feed will appear here when live mode starts.</div>
               </div>
               <div class="camera-shell" id="live-overlay-shell">
-                <span class="camera-label">Annotated Analysis Overlay</span>
-                <img id="live-annotated" alt="Annotated live frame" class="camera-preview" />
-                <div class="surface-placeholder">The analysis overlay appears here as soon as the first frame is processed.</div>
+                <span class="camera-label">Model Diagnostic View</span>
+                <canvas id="live-model-view" class="camera-preview"></canvas>
+                <div class="surface-placeholder">The diagnostic model view appears here as soon as the first frame is processed.</div>
               </div>
               <div class="wireframe-shell">
                 <span class="camera-label">Vector Skeleton</span>
@@ -212,9 +213,14 @@
         <div class="chart-panel">
           <div class="metric-toggle-row">
             <button class="metric-toggle live-metric-toggle active" type="button" data-metric="shoulder_tilt_deg">Shoulder Tilt</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="clavicle_tilt_deg">Clavicle Tilt</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="shoulder_imbalance">Shoulder Imbalance</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="trunk_tilt_deg">Frontal Trunk</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="lateral_shift_pct">Lateral Shift</button>
             <button class="metric-toggle live-metric-toggle" type="button" data-metric="trunk_lean_angle">Trunk Lean</button>
             <button class="metric-toggle live-metric-toggle" type="button" data-metric="kyphosis_angle">Kyphosis</button>
             <button class="metric-toggle live-metric-toggle" type="button" data-metric="lordosis_angle">Lordosis</button>
+            <button class="metric-toggle live-metric-toggle" type="button" data-metric="keypoint_confidence">Keypoint Confidence</button>
           </div>
           <div class="chart-headline">
             <strong id="live-chart-label">Shoulder Tilt Trend</strong>

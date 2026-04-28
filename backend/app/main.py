@@ -89,7 +89,7 @@ def _merge_live_config(payload: dict) -> dict:
     base = {
         "shoulder_view": "front",
         "pose_plane": "frontal",
-        "model_size": "medium",
+        "model_size": "small",
         "skip_frames": 2,
     }
     base.update(payload or {})

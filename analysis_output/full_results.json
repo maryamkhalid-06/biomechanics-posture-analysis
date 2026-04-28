@@ -1,0 +1,312 @@
+[
+  {
+    "name": "Person 1",
+    "gender": "Male",
+    "bmi": 19.4094,
+    "height": "183cm",
+    "averages": {
+      "kyphosis": 101.03,
+      "lordosis": 51.98,
+      "trunk_lean": 0.91,
+      "shoulder_tilt": 0.48
+    },
+    "videos": {
+      "sag_loaded": {
+        "kyphosis_mean": 97.8,
+        "lordosis_mean": 51.79,
+        "trunk_lean_mean": 0.9,
+        "shoulder_tilt_mean": 0.54,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.85,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 108,
+        "total_frames": 108
+      },
+      "sag_unloaded": {
+        "kyphosis_mean": 98.75,
+        "lordosis_mean": 51.02,
+        "trunk_lean_mean": 0.94,
+        "shoulder_tilt_mean": 0.44,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.79,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 108,
+        "total_frames": 108
+      },
+      "front_loaded": {
+        "kyphosis_mean": 105.26,
+        "lordosis_mean": 51.11,
+        "trunk_lean_mean": 0.94,
+        "shoulder_tilt_mean": 0.47,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.8,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 90,
+        "total_frames": 90
+      },
+      "front_unloaded": {
+        "kyphosis_mean": 102.32,
+        "lordosis_mean": 54.0,
+        "trunk_lean_mean": 0.86,
+        "shoulder_tilt_mean": 0.46,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 101,
+        "total_frames": 101
+      }
+    }
+  },
+  {
+    "name": "Person 2",
+    "gender": "Male",
+    "bmi": 20.7451,
+    "height": "185cm",
+    "averages": {
+      "kyphosis": 98.87,
+      "lordosis": 51.66,
+      "trunk_lean": 0.86,
+      "shoulder_tilt": 0.44
+    },
+    "videos": {
+      "sag_loaded": {
+        "kyphosis_mean": 98.28,
+        "lordosis_mean": 52.61,
+        "trunk_lean_mean": 0.87,
+        "shoulder_tilt_mean": 0.45,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.79,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 143,
+        "total_frames": 143
+      },
+      "sag_unloaded": {
+        "kyphosis_mean": 100.75,
+        "lordosis_mean": 48.8,
+        "trunk_lean_mean": 0.9,
+        "shoulder_tilt_mean": 0.43,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.82,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 94,
+        "total_frames": 94
+      },
+      "front_loaded": {
+        "kyphosis_mean": 98.49,
+        "lordosis_mean": 52.54,
+        "trunk_lean_mean": 0.87,
+        "shoulder_tilt_mean": 0.45,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 115,
+        "total_frames": 115
+      },
+      "front_unloaded": {
+        "kyphosis_mean": 97.97,
+        "lordosis_mean": 52.69,
+        "trunk_lean_mean": 0.82,
+        "shoulder_tilt_mean": 0.45,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 91,
+        "total_frames": 91
+      }
+    }
+  },
+  {
+    "name": "Person 3",
+    "gender": "Male",
+    "bmi": 21.4692,
+    "height": "174cm",
+    "averages": {
+      "kyphosis": 100.97,
+      "lordosis": 53.27,
+      "trunk_lean": 0.95,
+      "shoulder_tilt": 0.49
+    },
+    "videos": {
+      "sag_loaded": {
+        "kyphosis_mean": 102.08,
+        "lordosis_mean": 53.63,
+        "trunk_lean_mean": 0.94,
+        "shoulder_tilt_mean": 0.48,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.8,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 139,
+        "total_frames": 139
+      },
+      "sag_unloaded": {
+        "kyphosis_mean": 100.14,
+        "lordosis_mean": 52.86,
+        "trunk_lean_mean": 0.95,
+        "shoulder_tilt_mean": 0.44,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.82,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 107,
+        "total_frames": 107
+      },
+      "front_loaded": {
+        "kyphosis_mean": 96.13,
+        "lordosis_mean": 52.05,
+        "trunk_lean_mean": 0.91,
+        "shoulder_tilt_mean": 0.48,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.79,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 113,
+        "total_frames": 113
+      },
+      "front_unloaded": {
+        "kyphosis_mean": 105.52,
+        "lordosis_mean": 54.55,
+        "trunk_lean_mean": 0.99,
+        "shoulder_tilt_mean": 0.56,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.79,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 84,
+        "total_frames": 84
+      }
+    }
+  },
+  {
+    "name": "Person 4",
+    "gender": "Male",
+    "bmi": 24.0205,
+    "height": "164.5cm",
+    "averages": {
+      "kyphosis": 99.39,
+      "lordosis": 52.62,
+      "trunk_lean": 0.93,
+      "shoulder_tilt": 0.48
+    },
+    "videos": {
+      "sag_loaded": {
+        "kyphosis_mean": 100.63,
+        "lordosis_mean": 49.71,
+        "trunk_lean_mean": 0.91,
+        "shoulder_tilt_mean": 0.49,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.77,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 116,
+        "total_frames": 116
+      },
+      "sag_unloaded": {
+        "kyphosis_mean": 100.78,
+        "lordosis_mean": 53.19,
+        "trunk_lean_mean": 0.92,
+        "shoulder_tilt_mean": 0.48,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.77,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 117,
+        "total_frames": 117
+      },
+      "front_loaded": {
+        "kyphosis_mean": 96.32,
+        "lordosis_mean": 52.8,
+        "trunk_lean_mean": 0.98,
+        "shoulder_tilt_mean": 0.5,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.77,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 94,
+        "total_frames": 94
+      },
+      "front_unloaded": {
+        "kyphosis_mean": 99.82,
+        "lordosis_mean": 54.8,
+        "trunk_lean_mean": 0.91,
+        "shoulder_tilt_mean": 0.45,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 101,
+        "total_frames": 101
+      }
+    }
+  },
+  {
+    "name": "Person 5",
+    "gender": "Male",
+    "bmi": 17.3191,
+    "height": "183cm",
+    "averages": {
+      "kyphosis": 99.43,
+      "lordosis": 50.74,
+      "trunk_lean": 0.94,
+      "shoulder_tilt": 0.5
+    },
+    "videos": {
+      "sag_loaded": {
+        "kyphosis_mean": 103.38,
+        "lordosis_mean": 49.02,
+        "trunk_lean_mean": 0.92,
+        "shoulder_tilt_mean": 0.53,
+        "walk_direction": "Sagittal",
+        "walk_confidence": 0.77,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 115,
+        "total_frames": 115
+      },
+      "sag_unloaded": {
+        "kyphosis_mean": 99.53,
+        "lordosis_mean": 48.02,
+        "trunk_lean_mean": 0.95,
+        "shoulder_tilt_mean": 0.49,
+        "walk_direction": "Oblique",
+        "walk_confidence": 0.81,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 107,
+        "total_frames": 107
+      },
+      "front_loaded": {
+        "kyphosis_mean": 99.69,
+        "lordosis_mean": 52.89,
+        "trunk_lean_mean": 0.95,
+        "shoulder_tilt_mean": 0.49,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 145,
+        "total_frames": 145
+      },
+      "front_unloaded": {
+        "kyphosis_mean": 95.1,
+        "lordosis_mean": 53.03,
+        "trunk_lean_mean": 0.94,
+        "shoulder_tilt_mean": 0.5,
+        "walk_direction": "Frontal",
+        "walk_confidence": 0.78,
+        "kyphosis_class": "severe",
+        "trunk_lean_class": "normal_gait_range",
+        "valid_frames": 107,
+        "total_frames": 107
+      }
+    }
+  }
+]

@@ -38,7 +38,21 @@ ALLOWED_POSE_PLANES = {"frontal", "sagittal", "oblique"}
 ALLOWED_MODEL_SIZES = {"small", "medium", "large", "xlarge"}
 DETECTED_PLANE_CONFIDENCE = 0.55
 DEFAULT_MODEL_SIZE = "medium"
-LIVE_MAX_WIDTH = 720
+LIVE_MAX_WIDTH = 640
+LIVE_JPEG_QUALITY = 68
+
+SHOULDER_LIVE_KEYPOINT_NAMES = (
+    "left_shoulder",
+    "right_shoulder",
+    "left_hip",
+    "right_hip",
+    "neck",
+    "hip",
+    "left_clavicle",
+    "right_clavicle",
+)
+
+SPINAL_LIVE_ORDER = ("C1", "C4", "C7", "T3", "T8", "L1", "L3", "L5", "Sacrum")
 
 
 class InputValidationError(Exception):
@@ -85,7 +99,7 @@ def _to_url(path: Path) -> str:
 
 
 def _encode_frame(frame: np.ndarray) -> str | None:
-    ok, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 78])
+    ok, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), LIVE_JPEG_QUALITY])
     if not ok:
         return None
     return "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
@@ -117,6 +131,18 @@ def _read_text(path: Path) -> str | None:
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
+def _normalized_point_payload(x: float, y: float, width: int, height: int, **extra: Any) -> dict[str, Any]:
+    payload = {
+        "x": float(x) / max(float(width), 1.0),
+        "y": float(y) / max(float(height), 1.0),
+    }
+    for key, value in extra.items():
+        if value is None:
+            continue
+        payload[key] = float(value) if isinstance(value, (int, float, np.floating, np.integer)) else value
+    return payload
+
+
 def _empty_section(section_name: str, guidance: str) -> dict[str, Any]:
     return {
         "active": False,
@@ -140,7 +166,7 @@ class AnalysisService:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._shoulder_estimators: dict[tuple[str, str], Any] = {}
-        self._spinal_pipeline: spinal_module.AnatomicalPipeline | None = None
+        self._spinal_pipelines: dict[str, spinal_module.AnatomicalPipeline] = {}
         self._walk_detector: walk_module.Detector | None = None
         self._jobs: dict[str, dict[str, Any]] = {}
 
@@ -216,16 +242,25 @@ class AnalysisService:
                 )
             return self._shoulder_estimators[key]
 
-    def _get_spinal_pipeline(self) -> spinal_module.AnatomicalPipeline:
+    @staticmethod
+    def _spinal_mode_for_model_size(model_size: str) -> str:
+        if model_size == "small":
+            return "light"
+        if model_size in {"large", "xlarge"}:
+            return "heavy"
+        return "medium"
+
+    def _get_spinal_pipeline(self, model_size: str) -> spinal_module.AnatomicalPipeline:
+        mode = self._spinal_mode_for_model_size(model_size)
         with self._lock:
-            if self._spinal_pipeline is None:
-                self._spinal_pipeline = spinal_module.AnatomicalPipeline(mode="medium")
-            return self._spinal_pipeline
+            if mode not in self._spinal_pipelines:
+                self._spinal_pipelines[mode] = spinal_module.AnatomicalPipeline(mode=mode)
+            return self._spinal_pipelines[mode]
 
     def _get_walk_detector(self) -> walk_module.Detector:
         with self._lock:
             if self._walk_detector is None:
-                self._walk_detector = walk_module.Detector(conf=0.5, video_mode=False)
+                self._walk_detector = walk_module.Detector(conf=0.5, video_mode=True)
             return self._walk_detector
 
     @staticmethod
@@ -332,36 +367,91 @@ class AnalysisService:
             "guidance": self._guidance_for_plane(effective_plane, fallback_active=fallback_active, source_plane=dominant_plane),
         }
 
+    @staticmethod
+    def _build_shoulder_overlay_payload(
+        keypoints: np.ndarray | None,
+        scores: np.ndarray | None,
+        frame_shape: tuple[int, int, int],
+        metrics: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        if keypoints is None or scores is None:
+            return None
+        height, width = frame_shape[:2]
+        points: dict[str, Any] = {}
+        for name in SHOULDER_LIVE_KEYPOINT_NAMES:
+            index = shoulder_module.KP.get(name)
+            if index is None or index >= len(keypoints) or index >= len(scores):
+                continue
+            x, y = keypoints[index, :2]
+            points[name] = _normalized_point_payload(x, y, width, height, confidence=scores[index])
+
+        if not points:
+            return None
+
+        return {
+            "points": points,
+            "segments": [
+                ["left_shoulder", "right_shoulder"],
+                ["left_clavicle", "right_clavicle"],
+                ["neck", "hip"],
+                ["left_shoulder", "left_hip"],
+                ["right_shoulder", "right_hip"],
+                ["left_shoulder", "neck"],
+                ["right_shoulder", "neck"],
+            ],
+            "metrics": _serialize(metrics),
+        }
+
+    @staticmethod
+    def _build_spinal_overlay_payload(
+        keypoints: dict[str, Any] | None,
+        frame_shape: tuple[int, int, int],
+        confidence: float | None = None,
+    ) -> dict[str, Any] | None:
+        if not keypoints:
+            return None
+        height, width = frame_shape[:2]
+        points: dict[str, Any] = {}
+        for name in SPINAL_LIVE_ORDER:
+            point = keypoints.get(name)
+            if point is None:
+                continue
+            x, y = point[:2]
+            points[name] = _normalized_point_payload(x, y, width, height, confidence=confidence)
+
+        if not points:
+            return None
+
+        return {
+            "points": points,
+            "order": [name for name in SPINAL_LIVE_ORDER if name in points],
+            "confidence": confidence,
+        }
+
     def _process_shoulder_frame(
         self,
         frame: np.ndarray,
         shoulder_view: str,
         model_size: str,
         frame_idx: int = 0,
-    ) -> tuple[dict[str, Any], np.ndarray]:
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         estimator = self._get_shoulder_estimator(model_size)
         keypoints, scores = estimator(frame)
         kp_single, sc_single = shoulder_module.select_primary_detection(keypoints, scores)
         if kp_single is None or sc_single is None:
-            annotated = frame.copy()
-            cv2.putText(
-                annotated,
-                "No shoulder landmarks detected",
-                (16, 32),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.75,
-                (0, 160, 255),
-                2,
-                cv2.LINE_AA,
-            )
-            return {}, annotated
+            return {}, None
 
         metrics = shoulder_module.extract_metrics(kp_single, sc_single, frame_idx, shoulder_view)
-        annotated = shoulder_module.annotate_frame(frame.copy(), kp_single, sc_single, metrics, shoulder_view)
-        return metrics, annotated
+        overlay = self._build_shoulder_overlay_payload(kp_single, sc_single, frame.shape, metrics)
+        return metrics, overlay
 
-    def _process_spinal_frame(self, frame: np.ndarray, frame_idx: int = 0) -> dict[str, Any]:
-        result = self._get_spinal_pipeline().process_frame(frame, frame_idx)
+    def _process_spinal_frame(
+        self,
+        frame: np.ndarray,
+        model_size: str,
+        frame_idx: int = 0,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        result = self._get_spinal_pipeline(model_size).process_frame(frame, frame_idx)
         payload = {
             "valid": result.valid,
             "rejection_reason": result.rejection_reason,
@@ -374,18 +464,19 @@ class AnalysisService:
             "lordosis_class_ohlendorf": result.lordosis_class_ohlendorf,
             "kyphosis_class_ohlendorf": result.kyphosis_class_ohlendorf,
         }
-        return _serialize(payload)
+        overlay = self._build_spinal_overlay_payload(result.keypoints, frame.shape, result.keypoint_confidence)
+        return _serialize(payload), overlay
 
-    def _process_walk_frame(self, frame: np.ndarray) -> tuple[dict[str, Any] | None, np.ndarray]:
+    def _process_walk_frame(self, frame: np.ndarray) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         detector = self._get_walk_detector()
-        annotated, result = detector.process(frame.copy())
+        _, result, landmarks = detector.process_with_landmarks(frame, draw=False)
         if result is None:
-            return None, annotated
+            return None, None
         return {
             "label": result.label,
             "confidence": result.confidence,
             "score": result.score,
-        }, walk_module.draw_hud(annotated, result)
+        }, landmarks
 
     def _build_metric_states(
         self,
@@ -508,22 +599,23 @@ class AnalysisService:
     def analyze_live_frame(self, image_data: str, config: dict[str, Any]) -> dict[str, Any]:
         validated = self.validate_config(config)
         frame = _resize_live_frame(_decode_frame(image_data))
-        walk_metrics, walk_frame = self._process_walk_frame(frame)
+        walk_metrics, walk_overlay = self._process_walk_frame(frame)
         routing = self._build_routing_payload(validated["pose_plane"], walk_metrics)
         active_route = self._route_for_plane(routing["effective_pose_plane"])
 
         shoulder_metrics: dict[str, Any] = {}
-        shoulder_frame = frame
+        shoulder_overlay: dict[str, Any] | None = None
         if active_route["shoulder"]:
-            shoulder_metrics, shoulder_frame = self._process_shoulder_frame(
+            shoulder_metrics, shoulder_overlay = self._process_shoulder_frame(
                 frame,
                 validated["shoulder_view"],
                 validated["model_size"],
             )
 
         spinal_metrics: dict[str, Any] = {}
+        spinal_overlay: dict[str, Any] | None = None
         if active_route["spinal"]:
-            spinal_metrics = self._process_spinal_frame(frame)
+            spinal_metrics, spinal_overlay = self._process_spinal_frame(frame, validated["model_size"])
 
         merged = {
             **_serialize(shoulder_metrics),
@@ -535,16 +627,20 @@ class AnalysisService:
         states = self._build_metric_states(merged, active_route)
         routing["clinical_thresholds"] = self._clinical_thresholds()
 
-        preferred_frame = shoulder_frame if active_route["shoulder"] else frame
-        if walk_frame is not None:
-            preferred_frame = walk_frame
-        annotated = self._draw_live_summary(preferred_frame, merged, states, walk_metrics, routing)
-
         return {
             "metrics": merged,
             "threshold_states": states,
             "routing": routing,
-            "annotated_frame": _encode_frame(annotated),
+            "annotated_frame": None,
+            "overlay": {
+                "frame": {
+                    "width": int(frame.shape[1]),
+                    "height": int(frame.shape[0]),
+                },
+                "walk": walk_overlay,
+                "shoulder": shoulder_overlay,
+                "spinal": spinal_overlay,
+            },
         }
 
     def _summarize_shoulder_rows(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -654,7 +750,7 @@ class AnalysisService:
             "Spinal curvature runs on sagittal captures.",
         )
         if active_route["spinal"]:
-            spinal_result = self._get_spinal_pipeline().analyze_video(video_path)
+            spinal_result = self._get_spinal_pipeline(validated["model_size"]).analyze_video(video_path)
             report = spinal_module.ClinicalComparisonReport.generate(
                 kyphosis_deg=spinal_result.summary.get("kyphosis", {}).get("mean"),
                 lordosis_deg=spinal_result.summary.get("lordosis", {}).get("mean"),
