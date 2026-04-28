@@ -322,6 +322,29 @@ Open:
 http://127.0.0.1:8000
 ```
 
+This all-in-one local mode does not require Render, Vercel, or any paid deployment service. The backend serves the frontend directly, so you can develop and use the app entirely on your own machine.
+
+### Make it online with Cloudflare Tunnel
+
+If you want to share the app online without deploying it to Render, you can expose your local backend with Cloudflare Tunnel.
+
+1. Install `cloudflared` from:
+   `https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/`
+2. Run:
+
+```powershell
+.\start_online.ps1
+```
+
+3. Copy the public `trycloudflare.com` link shown in the terminal and open it in a browser.
+
+Notes:
+
+- Your computer must stay on while the public link is in use.
+- Keep the tunnel window open or the link will stop working.
+- The backend still runs locally on `http://127.0.0.1:8000`.
+- Logs are written to `backend_stdout.log` and `backend_stderr.log`.
+
 ### Alternative: Run Uvicorn directly
 
 ```powershell
@@ -354,6 +377,12 @@ So during development you should run both:
 1. the FastAPI backend on port `8000`
 2. the Vite dev server on port `5173`
 
+If you use this split local mode, set:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
 ## Production Deployment
 
 ### Recommended topology
@@ -363,6 +392,17 @@ So during development you should run both:
 - Render persistent disk stores `backend_storage/`
 
 This split is the recommended production path because the backend depends on heavy Python CV/AI libraries and a live WebSocket analysis stream.
+
+### No-Render option
+
+If you do not want to use Render, you can skip the entire production deployment section and run the application locally:
+
+1. Install Python dependencies with `pip install -r requirements.txt`
+2. Optionally install frontend dependencies with `cd frontend` then `npm install`
+3. Start the app with `python run_backend.py`
+4. Open `http://127.0.0.1:8000`
+
+You only need `VITE_API_BASE_URL` when the frontend is running separately from the backend. If the backend is serving the frontend for you, no deployment platform or backend URL is required.
 
 ### Vercel frontend
 
