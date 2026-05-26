@@ -1736,7 +1736,19 @@ function init() {
   document.querySelectorAll(".tab-button").forEach((button) => {
     button.addEventListener("click", () => setActiveTab(button.dataset.tab));
   });
-  setActiveTab("upload");
+
+  const hash = location.hash ? location.hash.replace("#", "") : "upload";
+  if (hash === "demo") {
+    setActiveTab("upload");
+    fetch("/demo_results.json")
+      .then((r) => r.json())
+      .then((payload) => renderUploadResult(payload))
+      .catch((err) => console.error("Failed to load demo results:", err));
+  } else if (["upload", "live", "research"].includes(hash)) {
+    setActiveTab(hash);
+  } else {
+    setActiveTab("upload");
+  }
 
   $("upload-file").addEventListener("change", (event) => {
     state.uploadFile = event.target.files?.[0] || null;
