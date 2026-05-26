@@ -42,15 +42,12 @@ A premium dark-themed cybernetic control panel equipped with dynamic ambient glo
 
 ### 📊 Deep Kinematic Diagnostics (Analysis Results)
 Comprehensive, multi-axis visual charts rendering shoulder symmetry, joint tilt matrices, and complete coordinate path traces.
-![Analysis Results](docs/screenshots/video_analysis_result.png)
 
 ### 👁️ Real-Time Live Feed (Webcam Analysis)
 Super-low latency pose estimation stream using continuous WebSockets to track, overlay, and plot active skeletal vectors.
-![Live Mode](docs/screenshots/live_mode.png)
 
 ### 🧬 High-Throughput Cohort Analysis (Researcher Suite)
 A professional research module for queueing large directories of patient videos and compiling structured batch manifests.
-![Researcher Mode](docs/screenshots/researcher_mode.png)
 
 ---
 
