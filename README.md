@@ -9,8 +9,6 @@
 
 ---
 
-![Biomechanics Posture Analysis Banner](docs/screenshots/hero_banner.png)
-
 ## 🌌 Overview
 
 Welcome to the future of clinical biomechanics and kinetic analysis. **Biomechanics Posture Analysis** is a professional-grade, high-fidelity application designed to analyze, assess, and visualize human posture in real-time, from single videos, or across high-throughput clinical datasets.
